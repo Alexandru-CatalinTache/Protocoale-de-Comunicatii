@@ -1,0 +1,18 @@
+
+	Tache Alexandru-Catalin 325CD - TEMA 1
+
+-> realizez tabela de routare, citind pe rand cuvinte din fisierul transmis ca parametru la rulare. Si imi completez vectorul r_table, ce contine elemente de tip nod, adica structura cu 4 campuri: prefix, next_hop, mask si interface. Pentru ca initial datele le primesc ca stringuri folosesc functia inet_aton, respectiv atoi pentru a schimba in uint32_t, respectiv int.
+
+->aloc memorie pentru tabela arp, imi creez coada pe care o folosesc pentru pachetele pentru care am nevoie sa trimit un arp request, la care primesc un arp reply pentru a afla adresa mac corespunzatoare, initializez cu 0 variabila size_arp_table ce contine numarul de elemente din arp_table si initializez o variabila numar_cautari_in_arp_table, pe care o folosesc pentru ca prima data cand nu am nimic in arp_table sa nu mai fac o cautare degeaba => dau direct un arp request
+
+-> am 2 functii in disierul router.c utilizate si in laboratorul 4 de gasire a elementului din r_table ce contine next_hop (get_best_route) si de gasire a elementului din arp_table ce are acelasi ip cu cel trimis ca parametru
+
+->in while-ul din main ma ocup de 2 cazuri principale: pachete ip si arp. (cu functia parse_arp verific daca acestea sunt arp)
+-> pentru cele arp verific daca sunt de tip reply sau request
+-> in caz de reply: iau pachetul din coada cu functia queue_deq, adaug in tabela arp_table ip-ul si mac-ul corespunzator, fac rost de interfata necesara pornind de la adresa mac oferita si trimit pachetul mai departe 
+-> in caz de request: imi creez o noua variabila de tip struct ether_header cu functia build_ethhdr, careia ii dau ca parametrii variabila in care se retine tipul ether_header, adresa mac_sursa, sursa si tipul, apoi trimit un arp request cu send_arp, ce are ca parametrii destinatia, sursa, variabila construita anterior, interfata pachetului transmis si tipul ARPOP_REPLY
+-> pentru pachetele ip: verific ttl (in caz ca e <= 1) ii dau drop
+->calculez checksum si fac verificare daca este identic cu vechiul checksum (daca nu ii dau drop)
+->verific daca numar_cautari_in_arp_table e egal cu 0,in acest caz stiu sigur ca nu am nimic in tabela arp si atunci imi creez un arp request pentru a primi inapoi adresa mac necesara, iar pachetul il introduc in coada de asteptare cu functia queue_enq si actualizez numarul de cautari din arp_table
+-> daca e diferit de 0, am 2 cazuri: caud in tabela arp si nu gasesc ce imi trebuie, caz in care procedez ca mai devreme: imi construiesc arp request si salvez pachetul in coada de asteptare
+->daca gasesc in tabela arp: trimit mai departe pachetul la next_hop, folosindu-ma de functia get_interface_mac pentru adresa mac corespunzatoare si apoi functia send_packet de trimitere propriu-zisa
